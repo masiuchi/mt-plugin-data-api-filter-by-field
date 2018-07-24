@@ -3,17 +3,32 @@ use strict;
 use warnings;
 
 use MT;
+use MT::DataAPI::Endpoint::Common ();
 use MT::Meta;
 
-sub list_permission_filter {
-    my ( $cb, $app, $terms, $args, $opt ) = @_;
+sub init_app {
+    my $filtered_list = \&MT::DataAPI::Endpoint::Common::filtered_list;
+    my $run_permission_filter
+        = \&MT::DataAPI::Endpoint::Common::run_permission_filter;
+    no warnings 'redefine';
+    *MT::DataAPI::Endpoint::Common::filtered_list = sub {
+        local *MT::DataAPI::Endpoint::Common::run_permission_filter = sub {
+            _check_and_update_params_for_filtering(@_);
+            $run_permission_filter->(@_);
+        };
+        $filtered_list->(@_);
+    };
+}
+
+sub _check_and_update_params_for_filtering {
+    my ( $app, $filter, $type, $terms, $args, $opt ) = @_;
 
     my $search = $app->param('search');
-    return 1 unless defined $search && $search ne '';
+    return unless defined $search && $search ne '';
 
     my @search_fields = split ',', $app->param('searchFields');
     my @search_custom_fields = grep {/^field\./} @search_fields;
-    return 1 unless @search_custom_fields;
+    return unless @search_custom_fields;
 
     my $new_search_fields = join ',',
         grep { $_ !~ /^field\./ } @search_fields;
@@ -26,8 +41,6 @@ sub list_permission_filter {
         search_custom_fields => \@search_custom_fields,
     };
     $app->request( 'data_api_filter_by_field', $request );
-
-    1;
 }
 
 sub pre_load_filtered_list {
