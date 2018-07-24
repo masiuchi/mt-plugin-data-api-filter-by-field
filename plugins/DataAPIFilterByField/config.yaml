@@ -1,5 +1,5 @@
 name: DataAPIFilterByField
-version: 0.01
+version: 0.02
 description: <__trans phrase="Enable to filter data by custom field. (searchField=field.???)">
 plugin_link: https://github.com/masiuchi/mt-plugin-data-api-filter-by-field
 author_name: Masahiro IUCHI
